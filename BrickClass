@@ -1,0 +1,27 @@
+package com.example.eeshan.dxball;
+
+import android.graphics.RectF;
+
+/**
+ * Created by Eeshan on 3/8/2016.
+ */
+public class BrickClass {
+    private RectF _rectangleF;
+    private boolean _isVisible ;
+
+    private int _padding = 1;
+
+    public BrickClass(int $row, int $col, int $width, int $height){
+        _isVisible = true;
+        _rectangleF = new RectF($col*$width+_padding,$row*$height+_padding,$col*$width+$width-_padding,$row*$height+$height-_padding);
+    }
+    public RectF getRect(){
+        return _rectangleF;
+    }
+    public void setInvisible(){
+        _isVisible = false;
+    }
+    public boolean getVisibile(){
+        return _isVisible;
+    }
+}
