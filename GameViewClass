@@ -1,0 +1,122 @@
+package com.example.eeshan.brickbreaker;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Point;
+import android.view.Display;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.view.WindowManager;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by Eeshan on 2/26/2016.
+ */
+public class GameViewClass extends SurfaceView {
+    private Bitmap _bitmap;
+    private SurfaceHolder _holder;
+    private GameLoopClass _gameLoop;
+    //private BallClass _spriteClass;
+    private List<BallClass> _ballList= new ArrayList<BallClass>();
+    private List<BricksClass> _brickList = new ArrayList<BricksClass>();
+   // private List<PaddleClass> _paddleList = new ArrayList<PaddleClass>();
+
+    //private int _screenSizeX;
+    //private int _screenSizeY;
+
+
+    public GameViewClass(Context context) {
+        super(context);
+        _gameLoop = new GameLoopClass(this);
+        _holder = getHolder();
+//        Display display = (WindowManager)context.getSystemService(Context.WINDOW_SERVICE);
+
+
+
+        _holder.addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                Boolean flag = true;
+                _gameLoop.setRunning(false);
+                while(flag){
+                    try {
+                        _gameLoop.join();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+//                createBricks();
+      //          createPaddle();
+                createBall();
+                _gameLoop.setRunning(true);
+                _gameLoop.start();
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+            }
+
+
+        });
+    }
+    private void createBall(){
+        _ballList.add(createBall(R.drawable.red_ball));
+    }
+//    private void createPaddle(){
+//        _paddleList.add(createPaddle(R.drawable.new_paddle));
+//    }
+//    private void createBricks(){
+//        for(int i =0; i<48 ;i++){
+//            _brickList.add(createBricks(R.drawable.bricks));
+//        }
+//    }
+    private BallClass createBall(int $resourcesBall){
+        _bitmap = BitmapFactory.decodeResource(getResources(),$resourcesBall);
+        return new BallClass(this,_bitmap);
+    }
+
+//    private PaddleClass createPaddle(int $resources){
+//        _bitmap = BitmapFactory.decodeResource(getResources(),$resources);
+//        return new PaddleClass(this,_bitmap);
+//    }
+    private BricksClass createBricks(int $resources){
+        _bitmap = BitmapFactory.decodeResource(getResources(),$resources);
+        return new BricksClass(this,_bitmap);
+    }
+    protected void onDraw(Canvas $canvas){
+
+//        Toast.makeText(context, "Entering here", Toast.LENGTH_SHORT).show();
+        $canvas.drawColor(Color.BLACK);
+//        Toast.makeText(context, "setting color to Black", Toast.LENGTH_SHORT).show();
+//        Log.i("Entering here","Setting color to Black");
+        for(BallClass ballClass :_ballList){
+            ballClass.onDraw($canvas);
+        }
+        for(BricksClass brickSprite:_brickList ){
+            brickSprite.onDraw($canvas);
+        }
+//        for(PaddleClass paddleSprite:_paddleList){
+//            paddleSprite.onDraw($canvas);
+//        }
+    }
+    protected void checkCollision(){                    //Just checking for bricks and ball for now!
+        for(int i = _brickList.size()-1;i>=0;i--){
+            BricksClass brickObject = _brickList.get(i);
+            BallClass ballObject = _ballList.get(0);
+            if(brickObject.isColliding(ballObject.getX(),ballObject.getY())){
+                    _brickList.remove(brickObject);     /*Physics code also inserted here*/
+                    break;
+                }
+
+        }
+    }
+}
