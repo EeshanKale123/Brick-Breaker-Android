@@ -1,67 +1,216 @@
-package com.example.eeshan.brickbreaker;
+package com.example.eeshan.dxball;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Point;
+import android.graphics.RectF;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Display;
+import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity {
 
-    private SensorManager _sensorManager;
-    private Sensor _sensorAcce;
-    private long _lastUpdate = 0;
-    private float _lastX,_lastZ;
-    private static final int SHAKE_THRESHOLD = 600;
-    private PaddleClass _paddleClassObject;
+    private GameView _gameView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(new GameViewClass(this));
-        _sensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
-        _sensorAcce = _sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        _sensorManager.registerListener(this,_sensorAcce,_sensorManager.SENSOR_DELAY_NORMAL);
+        _gameView = new GameView(this);
+        setContentView(_gameView);
+
     }
 
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        Sensor sensor = event.sensor;
-        if (sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            float x = event.values[0];
-            float z = event.values[2];
-            long curTime = System.currentTimeMillis();
+    class GameView extends SurfaceView implements Runnable {
 
-            if ((curTime - _lastUpdate) > 100) {
-                long diffTime = (curTime - _lastUpdate);
-                _lastUpdate = curTime;
+        private SurfaceHolder _holder;
 
-                float speed = Math.abs(x + z - _lastX - _lastZ) / diffTime * 10000;
+        private Thread _gameThread = null;
+        private boolean _playing;
+        private boolean _paused = true;
+        protected Canvas _canvas;
+        protected Paint _paint;
+        private long _fps;
+        private long _timePerFrame;
+        private int _screenSizeX;
+        private int _screenSizeY;
 
-                if (speed > SHAKE_THRESHOLD) {
-                    _paddleClassObject = new PaddleClass(speed,_lastX);
-                }
+        private PaddleClass _paddleClass;
+        private BallClass _ballClass;
 
-                _lastX = x;
-                _lastZ = z;
+        BrickClass[] _bricks = new BrickClass[200];
+        int _noOfBricks = 0;
+        int _lives = 3;
+
+        public GameView(Context context) {
+            super(context);
+            _holder = getHolder();
+            _paint = new Paint();
+
+            Display display = getWindowManager().getDefaultDisplay();
+            Point point = new Point();
+            display.getSize(point);
+            _screenSizeX = point.x;
+            _screenSizeY = point.y;
+//            _lastX = _screenSizeX/2;
+            _paddleClass = new PaddleClass(_screenSizeX, _screenSizeY, context);
+            _ballClass = new BallClass(_screenSizeX, _screenSizeY);
+            resetBallAndPaddle();
+            restart();
+        }
+
+        @Override
+        public void run() {
+            while (_playing) {
+                long startTime = System.currentTimeMillis();
+                if (!_paused) update();
+                Draw();
+                _timePerFrame = System.currentTimeMillis() - startTime;
+                if (_timePerFrame >= 1) _fps = 1000 / _timePerFrame;
             }
         }
-    }
 
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        public void update() {
+            _paddleClass.update(_fps);
+            _ballClass.update(_fps);
+            for (int i = 0; i < _noOfBricks; i++) {
+                if (_bricks[i].getVisibile()) {
+                    if (RectF.intersects(_bricks[i].getRect(), _ballClass.getRect())) {
+                        _bricks[i].setInvisible();
+                        _ballClass.reverseY();
+                    }
+                }
+            }
+            if (RectF.intersects(_paddleClass.getRect(), _ballClass.getRect())) {
+                _ballClass.setVelocity();
+                _ballClass.reverseY();
+                _ballClass.clearY(_paddleClass.getRect().top - 2);
+            }
+            if (_ballClass.getRect().bottom > _screenSizeY) {
+                _ballClass.clearY(_screenSizeY - 2);
+                resetBallAndPaddle();
+                _lives--;
+                if (_lives == 0) {
+                    _paused = true;
+                    _lives = 3;
+                    restart();
+                }
+            }
+            if (_ballClass.getRect().top < 0) {
+                _ballClass.reverseY();
+                _ballClass.clearY(12);
+            }
+            if (_ballClass.getRect().left < 0) {
+                _ballClass.reverseX();
+                _ballClass.clearX(2);
+            }
+            if (_ballClass.getRect().right > _screenSizeX - 10) {
+                _ballClass.reverseX();
+                _ballClass.clearX(_screenSizeX - 22);
+            }
+            if(_paddleClass.getRect().left<0){
+                _paddleClass.setState(_paddleClass.STOPPED);
+            }
+            if(_paddleClass.getRect().right>_screenSizeX){
+                _paddleClass.setState((_paddleClass.STOPPED));
+            }
 
+        }
+
+        public void Draw() {
+            if (_holder.getSurface().isValid()) {
+                _canvas = _holder.lockCanvas();
+                _canvas.drawColor(Color.BLACK);
+                _paint.setColor(Color.BLUE);
+
+                _canvas.drawRect(_paddleClass.getRect(), _paint);
+                _paint.setColor(Color.YELLOW);
+                _canvas.drawRect(_ballClass.getRect(), _paint);
+                _paint.setColor(Color.GREEN);
+
+
+                for (int i = 0; i < _noOfBricks; i++) {
+                    if (_bricks[i].getVisibile()) {
+                        _canvas.drawRect(_bricks[i].getRect(), _paint);
+                    }
+                }
+                _holder.unlockCanvasAndPost(_canvas);
+            }
+        }
+
+        public void resetBallAndPaddle(){
+//            _paddleClass.resetPaddle(_screenSizeX,_screenSizeY);
+            _ballClass.reset(_screenSizeX, _screenSizeY);
+
+        }
+        public void restart() {
+//            _paddleClass.resetPaddle(_screenSizeX,_screenSizeY);
+
+            int brickWidth = _screenSizeX / 8;
+            int brickHeight = _screenSizeY / 10;
+            _noOfBricks = 0;
+
+            for (int column = 0; column < 8; column++) {
+                for (int row = 0; row < 3; row++) {
+                    _bricks[_noOfBricks] = new BrickClass(row, column, brickWidth, brickHeight);
+                    _noOfBricks++;
+                }
+            }
+        }
+
+        public void pause() {
+            _playing = false;
+            try {
+                _gameThread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void resume() {
+            _playing = true;
+            _gameThread = new Thread(this);
+            _gameThread.start();
+        }
+
+        public boolean onTouchEvent(MotionEvent event) {
+            switch (event.getAction() & MotionEvent.ACTION_MASK) {
+                case MotionEvent.ACTION_DOWN:
+                    _paused = false;
+                    if (event.getX() > _screenSizeX / 2) {
+                        _paddleClass.setState(_paddleClass.RIGHT);
+//                        Toast.makeText(this.getContext(), "getting tapped", Toast.LENGTH_LONG).show();
+                    } else {
+                        _paddleClass.setState(_paddleClass.LEFT);
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    _paddleClass.setState(_paddleClass.STOPPED);
+                    break;
+            }
+            return true;
+        }
     }
-    @Override
-    protected void onPause(){
-        super.onPause();
-        _sensorManager.unregisterListener(this);
-    }
-    @Override
-    protected void onResume(){
-        super.onResume();
-        _sensorManager.registerListener(this,_sensorAcce,_sensorManager.SENSOR_DELAY_NORMAL);
-    }
+        @Override
+        protected void onPause() {
+            super.onPause();
+            _gameView.pause();
+        }
+
+            @Override
+            protected void onResume(){
+                super.onResume();
+                _gameView.resume();
+            }
+
+
 }
