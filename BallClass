@@ -1,54 +1,57 @@
-package com.example.eeshan.brickbreaker;
+package com.example.eeshan.dxball;
 
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
+import android.graphics.RectF;
 
 import java.util.Random;
 
 /**
- * Created by Eeshan on 2/26/2016.
+ * Created by Eeshan on 3/8/2016.
  */
-    public class BallClass {
-    private Bitmap _bitmap;
-    private GameViewClass _gameView;
-    private Random _randVar;
-    private static int _speedX;
-    private static int _speedY = -30;
-    private static int _positionX;
-    private static int _positionY;
+public class BallClass {
+    private RectF _rectangleF;
+    float _speedX;
+    float _speedY;
+    float _width = 10;
+    float _height = 10;
 
-    public BallClass(GameViewClass $view, Bitmap $bitmap) {
-        _gameView = $view;
-        _bitmap = $bitmap;
-        _positionX = _gameView.getWidth() - 400;
-        _positionY = _gameView.getHeight() - 225;
-        _randVar = new Random();
-        _speedX = _randVar.nextInt(100-45)+5;
-//        _speedY = _randVar.nextInt(-50)-5;
+    public BallClass(int $screenX, int $screenY){
+        _speedX = 200;
+        _speedY = -400;     //Experiment with these values
 
+        _rectangleF = new RectF();
     }
-
-    protected void onDraw(Canvas $canvas) {
-        update();
-        $canvas.drawBitmap(_bitmap, _positionX, _positionY, null);
+    public RectF getRect(){
+        return _rectangleF;
     }
-
-    protected void update() {
-        if (_positionX > _gameView.getWidth() - _bitmap.getWidth() - _speedX || _positionX + _speedX < 0)
-            _speedX = -_speedX;
-        _positionX = _positionX + _speedX;
-         if(_positionY>_gameView.getHeight()-_bitmap.getHeight()-_speedY||_positionY+_speedY<0)
-            _speedY = -_speedY;
-        _positionY = _positionY + _speedY;
-        }
-    public float getX(){
-        //update();
-        return _positionX;
+    public void setVelocity(){
+        Random rand = new Random();
+        int var = rand.nextInt(2);
+        if(var==0)reverseX();
     }
-    public float getY(){
-       // update();
-        return _positionY;
+    protected void reverseX(){
+        _speedX = -_speedX;
     }
-
-
+    protected void reverseY(){
+        _speedY = -_speedY;
+    }
+    public void update(long $fps){
+        _rectangleF.left = _rectangleF.left + (_speedX/$fps);
+        _rectangleF.top= _rectangleF.top+ (_speedY/$fps);
+        _rectangleF.right = _rectangleF.left+_width;
+        _rectangleF.bottom = _rectangleF.top - _height;
+   }
+    public void clearX(float x){
+        _rectangleF.left = x;
+        _rectangleF.right = x + _width;
+    }
+    public void clearY(float y){
+        _rectangleF.bottom = y;
+        _rectangleF.top = y-_height;
+    }
+    public void reset(float x, float y){
+        _rectangleF.left = x / 2 + 10;
+        _rectangleF.top = y - 320;
+        _rectangleF.right = x / 2 + _width ;
+        _rectangleF.bottom = y - 20 - _height;
+    }
 }
