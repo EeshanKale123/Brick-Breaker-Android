@@ -1,0 +1,47 @@
+package com.example.eeshan.brickbreaker;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+
+
+import java.util.HashMap;
+
+import java.util.Map;
+
+/**
+ * Created by Eeshan on 2/26/2016.
+ */
+public class BricksClass {
+    private GameViewClass _gameView;
+    private Bitmap _bitmap;
+//    private BallClass _ballClassObject;
+
+    private int _positionX;
+    private int _positionY;
+    private Map<Float,Float> _positionMap = new HashMap<>();
+
+    public BricksClass(GameViewClass $view, Bitmap $bitmap){
+        _gameView = $view;
+        _bitmap = $bitmap;
+        _positionX = 0;
+        _positionY = 200;
+
+    }
+    protected void onDraw(Canvas $canvas){
+//        update();
+        for(float i = 30;i<=650;i+=120){
+            for(float j = 50;j<=500;j+=60){
+                $canvas.drawBitmap(_bitmap,i,j,null);
+                _positionMap.put(i,j);
+            }
+        }
+
+
+    }
+    public boolean isColliding(float $positionX, float $positionY){
+//        return $positionX>this._bitmap.getPixel((int)$positionX,(int)$positionY)&&$positionX<this._bitmap.getWidth()&&$positionY>this._bitmap.getPixel((int)$positionX,(int)$positionY)&&$positionY<this._bitmap.getHeight();
+//        return $positionX<_positionMap.get($positionX)+_bitmap.getWidth()&&$positionY<_positionMap.get(_positionY)+_bitmap.getHeight();
+        return false;
+
+    }
+}
