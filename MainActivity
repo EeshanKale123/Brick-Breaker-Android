@@ -1,0 +1,67 @@
+package com.example.eeshan.brickbreaker;
+
+import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
+
+    private SensorManager _sensorManager;
+    private Sensor _sensorAcce;
+    private long _lastUpdate = 0;
+    private float _lastX,_lastZ;
+    private static final int SHAKE_THRESHOLD = 600;
+    private PaddleClass _paddleClassObject;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(new GameViewClass(this));
+        _sensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
+        _sensorAcce = _sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        _sensorManager.registerListener(this,_sensorAcce,_sensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        Sensor sensor = event.sensor;
+        if (sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            float x = event.values[0];
+            float z = event.values[2];
+            long curTime = System.currentTimeMillis();
+
+            if ((curTime - _lastUpdate) > 100) {
+                long diffTime = (curTime - _lastUpdate);
+                _lastUpdate = curTime;
+
+                float speed = Math.abs(x + z - _lastX - _lastZ) / diffTime * 10000;
+
+                if (speed > SHAKE_THRESHOLD) {
+                    _paddleClassObject = new PaddleClass(speed,_lastX);
+                }
+
+                _lastX = x;
+                _lastZ = z;
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+    @Override
+    protected void onPause(){
+        super.onPause();
+        _sensorManager.unregisterListener(this);
+    }
+    @Override
+    protected void onResume(){
+        super.onResume();
+        _sensorManager.registerListener(this,_sensorAcce,_sensorManager.SENSOR_DELAY_NORMAL);
+    }
+}
