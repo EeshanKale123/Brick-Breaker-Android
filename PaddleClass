@@ -1,0 +1,68 @@
+package com.example.eeshan.brickbreaker;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.RectF;
+
+/**
+ * Created by Eeshan on 2/26/2016.
+ */
+public class PaddleClass {
+
+    private RectF _rectangleF;
+    private float _length;
+    private float _height;
+    private static final int SPEED_Y = 0;
+    private static float _positionY =0;
+
+    private final int STOPPED = 0;
+    private final int LEFT = 1;
+    private final int RIGHT = 2;
+
+    private int _paddleMoving = STOPPED;
+
+    private int _paddleSpeed = 350;
+    private GameViewClass _gameView;
+    private Bitmap _bitmap;
+    private static float _speedX;
+    private static float _positionX;
+    public PaddleClass(GameViewClass $view, Bitmap $bitmap){
+        _gameView = $view;
+        _bitmap = $bitmap;
+        _positionX = _gameView.getWidth()-400;
+        _positionY = _gameView.getHeight() - 200;
+        _rectangleF = new RectF(_positionX,_positionY,_positionX+_bitmap.getWidth(),_positionX+_bitmap.getHeight());
+    }
+//    public PaddleClass(float $speed,float $positionX){
+//        _speedX = $speed;
+//        _positionX=$positionX;
+//    }
+    public RectF getRect(){
+        return _rectangleF;
+    }
+    public void setMovementState(int $state){
+        _paddleMoving = $state;
+    }
+    protected void onDraw(Canvas $canvas){
+//        update();
+
+        $canvas.drawBitmap(_bitmap,_positionX,_positionY,null);
+    }
+//    private void update(){
+//      if(_positionX>_gameView.getWidth()-_bitmap.getWidth()-_speedX||_positionX+_speedX<0){
+//          _speedX = 0;
+//      }
+//    }
+    private void update(long fps){
+        if(_paddleMoving==LEFT){
+            _positionX = _positionX-_paddleSpeed/fps;
+        }
+        if(_paddleMoving==RIGHT){
+            _positionX = _positionX+_paddleSpeed/fps;
+        }
+        _rectangleF.left = _positionX;
+        _rectangleF.right = _positionX+_bitmap.getWidth();
+    }
+
+}
